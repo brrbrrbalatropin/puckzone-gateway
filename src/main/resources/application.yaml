@@ -5,6 +5,20 @@ spring:
   application:
     name: puckzone-gateway
 
+# Actuator: expone solo /actuator/health y habilita los grupos liveness/readiness
+# que Azure Container Apps usa como health probes. Los servimos localmente
+# (no es una ruta enrutada), así que los filtros JWT/rate-limit no aplican aquí.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
 puckzone:
   cors:
     # Lista separada por comas. En Azure se sobreescribe con el dominio del frontend.

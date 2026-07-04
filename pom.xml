@@ -36,6 +36,12 @@
             <artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>
         </dependency>
 
+        <!-- Health probes para Azure Container Apps -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- Validación local del JWT (HS256 con secreto compartido) -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
