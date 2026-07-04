@@ -1,3 +1,16 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: puckzone-gateway
+
+puckzone:
+  jwt:
+    # SOLO para desarrollo local. En Azure se inyecta PUCKZONE_JWT_SECRET.
+    secret: ${PUCKZONE_JWT_SECRET:puckzone-dev-secret-change-me-please-32bytes-min!!}
+  services:
+    auth: ${AUTH_SERVICE_URL:http://localhost:8081}
+    matchmaking: ${MATCHMAKING_SERVICE_URL:http://localhost:8082}
+    game: ${GAME_SERVICE_URL:http://localhost:8083}
+    ranking: ${RANKING_SERVICE_URL:http://localhost:8084}
