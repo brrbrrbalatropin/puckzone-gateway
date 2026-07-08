@@ -14,7 +14,8 @@ variable "image" {
 }
 
 variable "cors_allowed_origins" {
-  description = "Origenes permitidos para CORS (separados por coma). Actualizar cuando el frontend tenga dominio en Azure."
+  description = "Origenes permitidos para CORS (separados por coma)."
   type        = string
-  default     = "http://localhost:5173"
+  # Frontend desplegado en Azure + Vite local para desarrollo.
+  default     = "https://puckzone-frontend.calmgrass-8fe4a577.eastus.azurecontainerapps.io,http://localhost:5173"
 }
