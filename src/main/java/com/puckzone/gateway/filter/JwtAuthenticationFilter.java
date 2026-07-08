@@ -34,6 +34,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     public static final int ORDER = -100;
 
     private static final List<String> PUBLIC_PATHS = List.of("/api/auth/register", "/api/auth/login");
+    /** Specs OpenAPI de los servicios para Swagger UI: documentación pública. */
+    private static final String DOCS_PREFIX = "/docs/";
     private static final String WS_PREFIX = "/ws";
     private static final String BEARER_PREFIX = "Bearer ";
 
@@ -46,7 +48,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getPath().value();
-        if (PUBLIC_PATHS.contains(path)) {
+        if (PUBLIC_PATHS.contains(path) || path.startsWith(DOCS_PREFIX)) {
             return chain.filter(exchange);
         }
 

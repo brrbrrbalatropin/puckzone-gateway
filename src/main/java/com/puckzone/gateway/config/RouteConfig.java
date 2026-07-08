@@ -29,6 +29,12 @@ public class RouteConfig {
                 .route("game", r -> r.path("/api/game/**").uri(gameUrl))
                 .route("ranking", r -> r.path("/api/ranking/**").uri(rankingUrl))
                 .route("game-ws", r -> r.path("/ws/**").uri(gameUrl))
+                // Specs OpenAPI de los servicios internos para la Swagger UI
+                // del gateway: /docs/{servicio}/v3/api-docs -> /v3/api-docs.
+                // Publicas en el filtro JWT (documentacion, no datos).
+                .route("ranking-docs", r -> r.path("/docs/ranking/**")
+                        .filters(f -> f.rewritePath("/docs/ranking(?<segment>/?.*)", "${segment}"))
+                        .uri(rankingUrl))
                 .build();
     }
 }
