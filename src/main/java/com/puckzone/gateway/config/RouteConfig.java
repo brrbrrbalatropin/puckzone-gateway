@@ -32,6 +32,15 @@ public class RouteConfig {
                 // Specs OpenAPI de los servicios internos para la Swagger UI
                 // del gateway: /docs/{servicio}/v3/api-docs -> /v3/api-docs.
                 // Publicas en el filtro JWT (documentacion, no datos).
+                .route("auth-docs", r -> r.path("/docs/auth/**")
+                        .filters(f -> f.rewritePath("/docs/auth(?<segment>/?.*)", "${segment}"))
+                        .uri(authUrl))
+                .route("matchmaking-docs", r -> r.path("/docs/matchmaking/**")
+                        .filters(f -> f.rewritePath("/docs/matchmaking(?<segment>/?.*)", "${segment}"))
+                        .uri(matchmakingUrl))
+                .route("game-docs", r -> r.path("/docs/game/**")
+                        .filters(f -> f.rewritePath("/docs/game(?<segment>/?.*)", "${segment}"))
+                        .uri(gameUrl))
                 .route("ranking-docs", r -> r.path("/docs/ranking/**")
                         .filters(f -> f.rewritePath("/docs/ranking(?<segment>/?.*)", "${segment}"))
                         .uri(rankingUrl))
