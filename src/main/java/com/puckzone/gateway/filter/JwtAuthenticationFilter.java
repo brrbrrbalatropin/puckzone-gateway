@@ -33,7 +33,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     /** Corre después del rate limiting (-200) y antes de enrutar. */
     public static final int ORDER = -100;
 
-    private static final List<String> PUBLIC_PATHS = List.of("/api/auth/register", "/api/auth/login");
+    private static final List<String> PUBLIC_PATHS =
+            List.of("/api/auth/register", "/api/auth/login", "/api/auth/refresh");
     /** Specs OpenAPI de los servicios para Swagger UI: documentación pública. */
     private static final String DOCS_PREFIX = "/docs/";
     private static final String WS_PREFIX = "/ws";
@@ -73,8 +74,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private boolean isValid(String token) {
         try {
-            Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
-            return true;
+            var claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+            // Un refresh token (type=refresh, vive 7 dias) solo sirve en
+            // /api/auth/refresh: aqui no es credencial, se rechaza como si
+            // no viniera token. Sin esto, un refresh filtrado actuaria como
+            // access de larga vida y el access corto no limitaria nada.
+            return !"refresh".equals(claims.get("type", String.class));
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
