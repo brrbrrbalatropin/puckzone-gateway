@@ -12,7 +12,7 @@ resource "azurerm_container_app" "gateway" {
   }
 
   template {
-    # OJO: el rate limit (100 req/min por IP) vive EN MEMORIA por instancia;
+    # OJO: el rate limit (var.rate_limit_per_minute por IP) vive EN MEMORIA por instancia;
     # con mas replicas el limite efectivo se multiplica. Aceptable, pero se
     # deja en 1 para que el limite sea el disenado.
     min_replicas = 1
@@ -33,6 +33,10 @@ resource "azurerm_container_app" "gateway" {
       env {
         name  = "CORS_ALLOWED_ORIGINS"
         value = var.cors_allowed_origins
+      }
+      env {
+        name  = "RATE_LIMIT_PER_MINUTE"
+        value = tostring(var.rate_limit_per_minute)
       }
       # Servicios internos del environment: HTTP plano por nombre de app
       # (allow_insecure_connections en sus ingress; el cert de .internal. no

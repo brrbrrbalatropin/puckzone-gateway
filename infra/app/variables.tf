@@ -13,6 +13,16 @@ variable "image" {
   default     = "ghcr.io/brrbrrbalatropin/puckzone-gateway:latest"
 }
 
+variable "rate_limit_per_minute" {
+  description = "Limite de requests por minuto POR IP en el gateway."
+  type        = number
+  # El limite es por IP y el NAT de la universidad saca a todo el salon por
+  # una (o muy pocas) IP publicas: con el default del yaml (100) bastaban
+  # 3-4 personas polleando matchmaking para tumbar a todos con 429.
+  # 2000 cubre ~21 personas a ~60 req/min pico con margen.
+  default = 2000
+}
+
 variable "cors_allowed_origins" {
   description = "Origenes permitidos para CORS (separados por coma)."
   type        = string
