@@ -12,12 +12,21 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        # prometheus: métricas para Grafana. A diferencia de los servicios
+        # internos, aquí el endpoint queda expuesto a internet, por eso el
+        # MetricsTokenFilter le exige el token estático puckzone.metrics.token.
+        include: health,prometheus
   endpoint:
     health:
       probes:
         enabled: true
       show-details: never
+  metrics:
+    distribution:
+      # Histograma de latencias de los requests proxeados: habilita p95/p99
+      # reales en Grafana (histogram_quantile sobre los buckets).
+      percentiles-histogram:
+        http.server.requests: true
 
 puckzone:
   cors:
@@ -28,6 +37,10 @@ puckzone:
     secret: ${PUCKZONE_JWT_SECRET:puckzone-dev-secret-change-me-please-32bytes-min!!}
   rate-limit:
     requests-per-minute: ${RATE_LIMIT_PER_MINUTE:100}
+  metrics:
+    # Token que exige /actuator/prometheus (Bearer). SOLO para desarrollo
+    # local; en Azure se inyecta PUCKZONE_METRICS_TOKEN desde el remote state.
+    token: ${PUCKZONE_METRICS_TOKEN:puckzone-dev-metrics-token}
   services:
     auth: ${AUTH_SERVICE_URL:http://localhost:8081}
     matchmaking: ${MATCHMAKING_SERVICE_URL:http://localhost:8082}

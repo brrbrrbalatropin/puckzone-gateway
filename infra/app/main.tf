@@ -11,6 +11,13 @@ resource "azurerm_container_app" "gateway" {
     value = data.terraform_remote_state.base.outputs.jwt_secret
   }
 
+  # Token que el MetricsTokenFilter exige en /actuator/prometheus (el gateway
+  # es publico); el Prometheus interno manda el mismo token en su scrape.
+  secret {
+    name  = "metrics-token"
+    value = data.terraform_remote_state.base.outputs.metrics_token
+  }
+
   template {
     # OJO: el rate limit (var.rate_limit_per_minute por IP) vive EN MEMORIA por instancia;
     # con mas replicas el limite efectivo se multiplica. Aceptable, pero se
@@ -29,6 +36,10 @@ resource "azurerm_container_app" "gateway" {
       env {
         name        = "PUCKZONE_JWT_SECRET"
         secret_name = "jwt-secret"
+      }
+      env {
+        name        = "PUCKZONE_METRICS_TOKEN"
+        secret_name = "metrics-token"
       }
       env {
         name  = "CORS_ALLOWED_ORIGINS"

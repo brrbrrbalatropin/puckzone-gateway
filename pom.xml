@@ -42,6 +42,14 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- Metricas en formato Prometheus (/actuator/prometheus, protegido por
+             MetricsTokenFilter porque el gateway es publico) -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Validación local del JWT (HS256 con secreto compartido) -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
