@@ -29,7 +29,7 @@ class RateLimitingFilterTest {
 
     @BeforeEach
     void setUp() {
-        filter = new RateLimitingFilter(LIMIT);
+        filter = new RateLimitingFilter(new InMemoryRateCounter(), LIMIT);
         chain = mock(GatewayFilterChain.class);
         when(chain.filter(any())).thenReturn(Mono.empty());
     }

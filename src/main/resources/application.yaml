@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: puckzone-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
 # Actuator: expone solo /actuator/health y habilita los grupos liveness/readiness
 # que Azure Container Apps usa como health probes. Los servimos localmente
@@ -37,6 +41,10 @@ puckzone:
     secret: ${PUCKZONE_JWT_SECRET:puckzone-dev-secret-change-me-please-32bytes-min!!}
   rate-limit:
     requests-per-minute: ${RATE_LIMIT_PER_MINUTE:100}
+    # Contador del límite: memory SOLO local (réplica única); en Azure
+    # Terraform inyecta redis — obligatorio con 2+ réplicas para que el
+    # límite por IP sea global y no por instancia.
+    store: ${RATE_LIMIT_STORE:memory}
   metrics:
     # Token que exige /actuator/prometheus (Bearer). SOLO para desarrollo
     # local; en Azure se inyecta PUCKZONE_METRICS_TOKEN desde el remote state.

@@ -19,11 +19,12 @@ resource "azurerm_container_app" "gateway" {
   }
 
   template {
-    # OJO: el rate limit (var.rate_limit_per_minute por IP) vive EN MEMORIA por instancia;
-    # con mas replicas el limite efectivo se multiplica. Aceptable, pero se
-    # deja en 1 para que el limite sea el disenado.
-    min_replicas = 1
-    max_replicas = 1
+    # 2 replicas: el UNICO punto de entrada de la plataforma deja de ser
+    # punto unico de falla (y era el cuello de ~200 partidas en la prueba
+    # al limite de 2026-07-18). El rate limit por IP sigue siendo global:
+    # el contador vive en el Redis del environment (RATE_LIMIT_STORE=redis).
+    min_replicas = 2
+    max_replicas = 2
 
     container {
       # 0.5/1Gi como el resto: con menos CPU el arranque de Spring supera los
@@ -78,6 +79,20 @@ resource "azurerm_container_app" "gateway" {
       env {
         name  = "APPLICATIONINSIGHTS_CONNECTION_STRING"
         value = data.terraform_remote_state.base.outputs.application_insights_connection_string
+      }
+      # Contador del rate limit en el Redis del environment (al final de la
+      # lista: el diff de env de Container Apps es posicional).
+      env {
+        name  = "RATE_LIMIT_STORE"
+        value = "redis"
+      }
+      env {
+        name  = "SPRING_DATA_REDIS_HOST"
+        value = data.terraform_remote_state.base.outputs.redis_host
+      }
+      env {
+        name  = "SPRING_DATA_REDIS_PORT"
+        value = "6379"
       }
 
       liveness_probe {

@@ -1,10 +1,9 @@
 package com.puckzone.gateway.filter;
 
 import java.time.Instant;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -16,12 +15,15 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 /**
- * Rate limiting en memoria por IP con ventana fija de 1 minuto.
- * Corre antes del filtro JWT: rechazar abuso es más barato que validar firmas,
- * y así también protege /api/auth/login (pública) contra fuerza bruta.
+ * Rate limiting por IP con ventana fija de 1 minuto. Corre antes del filtro
+ * JWT: rechazar abuso es más barato que validar firmas, y así también
+ * protege /api/auth/login (pública) contra fuerza bruta.
  *
- * En memoria es suficiente porque el gateway corre como instancia única;
- * si algún día escala horizontalmente, migrar al RequestRateLimiter con Redis.
+ * <p>El contador vive detrás de {@link RateCounter}: en memoria en local y
+ * en Redis en producción, donde el límite es GLOBAL entre las réplicas del
+ * gateway. Si el contador falla (Redis caído), el filtro DEJA PASAR
+ * (fail-open): perder el límite un rato es mejor que tumbar el único punto
+ * de entrada de la plataforma.
  */
 @Component
 public class RateLimitingFilter implements GlobalFilter, Ordered {
@@ -29,11 +31,14 @@ public class RateLimitingFilter implements GlobalFilter, Ordered {
     /** Corre antes del JwtAuthenticationFilter (-100). */
     public static final int ORDER = -200;
 
-    private final int requestsPerMinute;
-    private final ConcurrentHashMap<String, AtomicInteger> counters = new ConcurrentHashMap<>();
-    private final AtomicLong lastSeenMinute = new AtomicLong(-1);
+    private static final Logger log = LoggerFactory.getLogger(RateLimitingFilter.class);
 
-    public RateLimitingFilter(@Value("${puckzone.rate-limit.requests-per-minute}") int requestsPerMinute) {
+    private final RateCounter counter;
+    private final int requestsPerMinute;
+
+    public RateLimitingFilter(RateCounter counter,
+                              @Value("${puckzone.rate-limit.requests-per-minute}") int requestsPerMinute) {
+        this.counter = counter;
         this.requestsPerMinute = requestsPerMinute;
     }
 
@@ -41,24 +46,22 @@ public class RateLimitingFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         long epochSecond = Instant.now().getEpochSecond();
         long minute = epochSecond / 60;
-        purgeOldWindows(minute);
 
-        String key = clientIp(exchange.getRequest()) + ":" + minute;
-        int count = counters.computeIfAbsent(key, k -> new AtomicInteger()).incrementAndGet();
-        if (count > requestsPerMinute) {
-            exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
-            exchange.getResponse().getHeaders().add("Retry-After", String.valueOf(60 - epochSecond % 60));
-            return exchange.getResponse().setComplete();
-        }
-        return chain.filter(exchange);
-    }
-
-    /** El primer request de cada minuto barre los contadores de ventanas anteriores. */
-    private void purgeOldWindows(long currentMinute) {
-        if (lastSeenMinute.getAndSet(currentMinute) != currentMinute) {
-            String suffix = ":" + currentMinute;
-            counters.keySet().removeIf(key -> !key.endsWith(suffix));
-        }
+        return counter.increment(clientIp(exchange.getRequest()), minute)
+                .flatMap(count -> {
+                    if (count > requestsPerMinute) {
+                        exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
+                        exchange.getResponse().getHeaders()
+                                .add("Retry-After", String.valueOf(60 - epochSecond % 60));
+                        return exchange.getResponse().setComplete();
+                    }
+                    return chain.filter(exchange);
+                })
+                .onErrorResume(e -> {
+                    log.warn("Rate limit sin contador ({}): el request pasa sin limitar",
+                            e.getMessage());
+                    return chain.filter(exchange);
+                });
     }
 
     /**

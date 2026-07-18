@@ -36,6 +36,12 @@
             <artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>
         </dependency>
 
+        <!-- Contador del rate limit compartido entre replicas (reactivo: WebFlux) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+        </dependency>
+
         <!-- Health probes para Azure Container Apps -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

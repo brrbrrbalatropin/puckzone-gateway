@@ -44,8 +44,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: compile
 
-    # El gateway no usa BD: el test de contexto no necesita servicios externos.
+    # Redis para el test de integracion del contador del rate limit
+    # compartido; el resto de tests usan el contador en memoria. Sin BD.
     # El secreto JWT, CORS y las URLs de los servicios tienen defaults dev.
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
