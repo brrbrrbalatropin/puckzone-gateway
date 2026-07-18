@@ -6,11 +6,21 @@ import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
+
 /**
  * Define las rutas del gateway hacia los 4 microservicios.
  * Solo matchmaking reescribe el path (público /api/matching → interno /queue);
  * los demás servicios exponen sus endpoints con el prefijo completo.
- * La ruta /ws/** cubre tanto el upgrade a WebSocket como los transportes HTTP de SockJS.
+ * Las rutas /ws/** y /ws-{shard}/** cubren tanto el upgrade a WebSocket como
+ * los transportes HTTP de SockJS.
+ *
+ * <p>Sharding de game por partida: cada shard es dueño de sus salas y el
+ * socket DE PARTIDA debe conectarse al shard que matchmaking asignó —
+ * /ws-{i} enruta al shard i de {@code puckzone.services.game-shards}
+ * (reescrito al /ws interno del servicio). La ruta /ws sigue yendo al
+ * shard 0: es el socket de lobby/chat/social (anclado ahí a propósito) y
+ * la compatibilidad con clientes viejos.
  */
 @Configuration
 public class RouteConfig {
@@ -20,8 +30,9 @@ public class RouteConfig {
                                        @Value("${puckzone.services.auth}") String authUrl,
                                        @Value("${puckzone.services.matchmaking}") String matchmakingUrl,
                                        @Value("${puckzone.services.game}") String gameUrl,
-                                       @Value("${puckzone.services.ranking}") String rankingUrl) {
-        return builder.routes()
+                                       @Value("${puckzone.services.ranking}") String rankingUrl,
+                                       @Value("${puckzone.services.game-shards}") List<String> gameShardUrls) {
+        var routes = builder.routes()
                 .route("auth", r -> r.path("/api/auth/**").uri(authUrl))
                 .route("matchmaking", r -> r.path("/api/matching/**")
                         .filters(f -> f.rewritePath("/api/matching(?<segment>/?.*)", "/queue${segment}"))
@@ -43,7 +54,15 @@ public class RouteConfig {
                         .uri(gameUrl))
                 .route("ranking-docs", r -> r.path("/docs/ranking/**")
                         .filters(f -> f.rewritePath("/docs/ranking(?<segment>/?.*)", "${segment}"))
-                        .uri(rankingUrl))
-                .build();
+                        .uri(rankingUrl));
+
+        for (int i = 0; i < gameShardUrls.size(); i++) {
+            String prefix = "/ws-" + i;
+            String shardUrl = gameShardUrls.get(i);
+            routes = routes.route("game-ws-" + i, r -> r.path(prefix + "/**")
+                    .filters(f -> f.rewritePath(prefix + "(?<segment>/?.*)", "/ws${segment}"))
+                    .uri(shardUrl));
+        }
+        return routes.build();
     }
 }

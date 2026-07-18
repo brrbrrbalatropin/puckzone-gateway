@@ -64,6 +64,13 @@ resource "azurerm_container_app" "gateway" {
         name  = "GAME_SERVICE_URL"
         value = "http://puckzone-game"
       }
+      # Shards de game EN ORDEN (la posicion i atiende /ws-{i}). Debe coincidir
+      # con el GAME_SHARD_URLS de matchmaking y con locals.game_shards del
+      # infra/app de puckzone-game (output game_shard_urls de game.tfstate).
+      env {
+        name  = "GAME_SHARD_URLS"
+        value = "http://puckzone-game,http://puckzone-game-1"
+      }
       env {
         name  = "RANKING_SERVICE_URL"
         value = "http://puckzone-ranking"

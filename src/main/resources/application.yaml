@@ -46,3 +46,7 @@ puckzone:
     matchmaking: ${MATCHMAKING_SERVICE_URL:http://localhost:8082}
     game: ${GAME_SERVICE_URL:http://localhost:8083}
     ranking: ${RANKING_SERVICE_URL:http://localhost:8084}
+    # Shards de game (sharding por partida), separados por comas y EN ORDEN:
+    # la posición i atiende /ws-{i}. Debe ser la MISMA lista (mismo orden)
+    # que el GAME_SHARD_URLS de matchmaking, que es quien asigna el shard.
+    game-shards: ${GAME_SHARD_URLS:http://localhost:8083}
