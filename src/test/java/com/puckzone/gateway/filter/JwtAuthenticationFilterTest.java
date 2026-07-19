@@ -23,7 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * El portero de la plataforma: públicas sin token, todo lo demás con JWT
+ * El portero de la plataforma: públicas sin token, el resto con JWT
  * válido (Bearer, o ?token= solo en /ws), y un refresh token NUNCA sirve
  * como credencial aunque su firma sea válida.
  */

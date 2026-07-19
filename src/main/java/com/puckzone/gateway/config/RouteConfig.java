@@ -25,6 +25,10 @@ import java.util.List;
 @Configuration
 public class RouteConfig {
 
+    /** Grupo capturado por el rewritePath: el resto del path tras el prefijo. */
+    private static final String SEGMENT_PATTERN = "(?<segment>/?.*)";
+    private static final String SEGMENT = "${segment}";
+
     @Bean
     public RouteLocator puckzoneRoutes(RouteLocatorBuilder builder,
                                        @Value("${puckzone.services.auth}") String authUrl,
@@ -35,7 +39,7 @@ public class RouteConfig {
         var routes = builder.routes()
                 .route("auth", r -> r.path("/api/auth/**").uri(authUrl))
                 .route("matchmaking", r -> r.path("/api/matching/**")
-                        .filters(f -> f.rewritePath("/api/matching(?<segment>/?.*)", "/queue${segment}"))
+                        .filters(f -> f.rewritePath("/api/matching" + SEGMENT_PATTERN, "/queue" + SEGMENT))
                         .uri(matchmakingUrl))
                 .route("game", r -> r.path("/api/game/**").uri(gameUrl))
                 .route("ranking", r -> r.path("/api/ranking/**").uri(rankingUrl))
@@ -44,23 +48,23 @@ public class RouteConfig {
                 // del gateway: /docs/{servicio}/v3/api-docs -> /v3/api-docs.
                 // Publicas en el filtro JWT (documentacion, no datos).
                 .route("auth-docs", r -> r.path("/docs/auth/**")
-                        .filters(f -> f.rewritePath("/docs/auth(?<segment>/?.*)", "${segment}"))
+                        .filters(f -> f.rewritePath("/docs/auth" + SEGMENT_PATTERN, SEGMENT))
                         .uri(authUrl))
                 .route("matchmaking-docs", r -> r.path("/docs/matchmaking/**")
-                        .filters(f -> f.rewritePath("/docs/matchmaking(?<segment>/?.*)", "${segment}"))
+                        .filters(f -> f.rewritePath("/docs/matchmaking" + SEGMENT_PATTERN, SEGMENT))
                         .uri(matchmakingUrl))
                 .route("game-docs", r -> r.path("/docs/game/**")
-                        .filters(f -> f.rewritePath("/docs/game(?<segment>/?.*)", "${segment}"))
+                        .filters(f -> f.rewritePath("/docs/game" + SEGMENT_PATTERN, SEGMENT))
                         .uri(gameUrl))
                 .route("ranking-docs", r -> r.path("/docs/ranking/**")
-                        .filters(f -> f.rewritePath("/docs/ranking(?<segment>/?.*)", "${segment}"))
+                        .filters(f -> f.rewritePath("/docs/ranking" + SEGMENT_PATTERN, SEGMENT))
                         .uri(rankingUrl));
 
         for (int i = 0; i < gameShardUrls.size(); i++) {
             String prefix = "/ws-" + i;
             String shardUrl = gameShardUrls.get(i);
             routes = routes.route("game-ws-" + i, r -> r.path(prefix + "/**")
-                    .filters(f -> f.rewritePath(prefix + "(?<segment>/?.*)", "/ws${segment}"))
+                    .filters(f -> f.rewritePath(prefix + SEGMENT_PATTERN, "/ws" + SEGMENT))
                     .uri(shardUrl));
         }
         return routes.build();

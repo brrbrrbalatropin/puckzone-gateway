@@ -10,7 +10,7 @@ import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 /**
- * CORS centralizado para todo el sistema: el gateway es el único punto de entrada,
+ * CORS centralizado para el sistema completo: el gateway es el único punto de entrada,
  * así que ningún microservicio debe agregar headers CORS propios (se duplicarían
  * y el navegador rechaza la respuesta).
  */
